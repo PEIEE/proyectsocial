@@ -23,7 +23,7 @@
                 <a href="#" class="hover:text-blue-400">Blog</a>
                 <a href="#" class="hover:text-blue-400">Carreras</a>
             </nav>
-            <a href="/login.html" class="open-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Abrir ChatKlax</a>
+            <a href="/login.html" id="open-chatklax-btn" class="open-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Abrir ChatKlax</a>
         </div>
         <div class="landing-main flex flex-col md:flex-row items-center justify-center p-8">
             <div class="landing-text max-w-md text-center md:text-left">
@@ -91,10 +91,20 @@
         document.addEventListener('DOMContentLoaded', () => {
             const menuToggle = document.querySelector('.menu-toggle');
             const navMenu = document.querySelector('.nav-menu');
+            const openChatklaxBtn = document.querySelector('#open-chatklax-btn');
+
             if (menuToggle && navMenu) {
                 menuToggle.addEventListener('click', () => {
                     navMenu.classList.toggle('active');
                     menuToggle.textContent = navMenu.classList.contains('active') ? '✖' : '☰';
+                });
+            }
+
+            if (openChatklaxBtn) {
+                openChatklaxBtn.addEventListener('click', (e) => {
+                    e.preventDefault(); // Evita comportamiento por defecto para depuración
+                    console.log('Clic en Abrir ChatKlax, redirigiendo a /login.html');
+                    window.location.href = '/login.html';
                 });
             }
         });
