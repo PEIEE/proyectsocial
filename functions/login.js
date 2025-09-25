@@ -1,33 +1,69 @@
-const { MongoClient } = require('mongodb');
+const { Client } = require('pg');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 exports.handler = async (event, context) => {
-    const client = new MongoClient(process.env.MONGODB_URI);
+    if (!event.body) {
+        return {
+            statusCode: 400,
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({ error: 'Cuerpo de la solicitud vacío' })
+        };
+    }
+
+    const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+
     try {
         await client.connect();
-        const db = client.db('discordclone');
-        const users = db.collection('users');
-
         const data = JSON.parse(event.body);
-        const user = await users.findOne({ username: data.username });
-        if (!user) {
-            return { statusCode: 404, body: JSON.stringify({ error: 'Usuario no encontrado' }) };
+        if (!data.username || !data.password) {
+            return {
+                statusCode: 400,
+                headers: { 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ error: 'Faltan username o password' })
+            };
         }
 
-        const isPasswordValid = await bcrypt.compare(data.password, user.password);
-        if (!isPasswordValid) {
-            return { statusCode: 401, body: JSON.stringify({ error: 'Contraseña incorrecta' }) };
+        // Verificar si el usuario existe
+        const query = 'SELECT * FROM users WHERE username = $1';
+        const result = await client.query(query, [data.username]);
+        if (result.rows.length === 0) {
+            return {
+                statusCode: 400,
+                headers: { 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ error: 'Usuario no encontrado' })
+            };
         }
 
-        const token = jwt.sign({ user_id: user._id }, process.env.SECRET_KEY, { expiresIn: '24h' });
+        // Verificar contraseña
+        const user = result.rows[0];
+        const isMatch = await bcrypt.compare(data.password, user.password);
+        if (!isMatch) {
+            return {
+                statusCode: 400,
+                headers: { 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ error: 'Contraseña incorrecta' })
+            };
+        }
+
+        // Generar token
+        const token = jwt.sign({ user_id: user.id }, process.env.SECRET_KEY, { expiresIn: '24h' });
         return {
             statusCode: 200,
+            headers: { 'Access-Control-Allow-Origin': '*' },
             body: JSON.stringify({ token, user: data.username })
         };
     } catch (err) {
-        return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+        console.error('Error en login:', err);
+        return {
+            statusCode: 500,
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({ error: `Error del servidor: ${err.message}` })
+        };
     } finally {
-        await client.close();
+        await client.end();
     }
 };
