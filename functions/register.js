@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+const { Client } = require('pg');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
@@ -11,16 +11,13 @@ exports.handler = async (event, context) => {
         };
     }
 
-    const client = new MongoClient(process.env.MONGODB_URI, {
-        connectTimeoutMS: 5000,
-        serverSelectionTimeoutMS: 5000
+    const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
     });
 
     try {
         await client.connect();
-        const db = client.db('discordclone');
-        const users = db.collection('users');
-
         const data = JSON.parse(event.body);
         if (!data.username || !data.password) {
             return {
@@ -30,8 +27,10 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const user = await users.findOne({ username: data.username });
-        if (user) {
+        // Verificar si el usuario existe
+        const checkQuery = 'SELECT * FROM users WHERE username = $1';
+        const checkResult = await client.query(checkQuery, [data.username]);
+        if (checkResult.rows.length > 0) {
             return {
                 statusCode: 400,
                 headers: { 'Access-Control-Allow-Origin': '*' },
@@ -39,15 +38,15 @@ exports.handler = async (event, context) => {
             };
         }
 
+        // Hashear contraseña
         const hashedPassword = await bcrypt.hash(data.password, 8);
-        const result = await users.insertOne({
-            username: data.username,
-            password: hashedPassword,
-            avatar: '/assets/default-avatar.png',
-            created_at: new Date()
-        });
 
-        const token = jwt.sign({ user_id: result.insertedId }, process.env.SECRET_KEY, { expiresIn: '24h' });
+        // Insertar usuario
+        const insertQuery = 'INSERT INTO users (username, password, avatar, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id';
+        const insertResult = await client.query(insertQuery, [data.username, hashedPassword, '/assets/default-avatar.png']);
+
+        // Generar token
+        const token = jwt.sign({ user_id: insertResult.rows[0].id }, process.env.SECRET_KEY, { expiresIn: '24h' });
         return {
             statusCode: 200,
             headers: { 'Access-Control-Allow-Origin': '*' },
@@ -61,6 +60,6 @@ exports.handler = async (event, context) => {
             body: JSON.stringify({ error: `Error del servidor: ${err.message}` })
         };
     } finally {
-        await client.close();
+        await client.end();
     }
 };
