@@ -16,11 +16,11 @@
         <div class="space-y-4">
             <div>
                 <label for="username" class="block text-sm">Nombre de usuario</label>
-                <input type="text" id="username" class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500">
+                <input type="text" id="username" class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500" required minlength="3" maxlength="20">
             </div>
             <div>
                 <label for="password" class="block text-sm">Contraseña</label>
-                <input type="password" id="password" class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500">
+                <input type="password" id="password" class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500" required minlength="6">
             </div>
             <div class="flex space-x-4">
                 <button id="login-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">Iniciar Sesión</button>
@@ -28,53 +28,85 @@
             </div>
         </div>
         <p id="error-message" class="text-red-500 text-center mt-4 hidden"></p>
+        <p id="success-message" class="text-green-500 text-center mt-4 hidden"></p>
     </div>
     <script>
-        document.getElementById('login-btn').addEventListener('click', () => {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('error-message');
+        function showMessage(elementId, message, isError = true) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.classList.remove('hidden');
+            setTimeout(() => element.classList.add('hidden'), 3000);
+        }
 
-            fetch('/api/login', {
+        document.getElementById('register-btn').addEventListener('click', () => {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (username.length < 3 || username.length > 20) {
+                showMessage('error-message', 'El nombre de usuario debe tener entre 3 y 20 caracteres.');
+                return;
+            }
+            if (password.length < 6) {
+                showMessage('error-message', 'La contraseña debe tener al menos 6 caracteres.');
+                return;
+            }
+
+            console.log('Enviando solicitud de registro:', { username, password });
+            fetch('/.netlify/functions/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
-            }).then(res => res.json()).then(data => {
+            }).then(res => {
+                console.log('Respuesta recibida:', res.status, res.statusText);
+                return res.json();
+            }).then(data => {
                 if (data.error) {
-                    errorMessage.textContent = data.error;
-                    errorMessage.classList.remove('hidden');
+                    showMessage('error-message', data.error);
                 } else {
+                    showMessage('success-message', '¡Registro exitoso! Redirigiendo...', false);
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('username', data.user);
-                    window.location.href = '/chat.html';
+                    setTimeout(() => window.location.href = '/chat.html', 1000);
                 }
             }).catch(err => {
-                errorMessage.textContent = 'Error en la conexión';
-                errorMessage.classList.remove('hidden');
+                console.error('Error en fetch:', err);
+                showMessage('error-message', 'Error en la conexión: ' + err.message);
             });
         });
 
-        document.getElementById('register-btn').addEventListener('click', () => {
-            const username = document.getElementById('username').value;
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('error-message');
+            
+            if (username.length < 3 || username.length > 20) {
+                showMessage('error-message', 'El nombre de usuario debe tener entre 3 y 20 caracteres.');
+                return;
+            }
+            if (password.length < 6) {
+                showMessage('error-message', 'La contraseña debe tener al menos 6 caracteres.');
+                return;
+            }
 
-            fetch('/api/register', {
+            console.log('Enviando solicitud de login:', { username, password });
+            fetch('/.netlify/functions/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
-            }).then(res => res.json()).then(data => {
+            }).then(res => {
+                console.log('Respuesta recibida:', res.status, res.statusText);
+                return res.json();
+            }).then(data => {
                 if (data.error) {
-                    errorMessage.textContent = data.error;
-                    errorMessage.classList.remove('hidden');
+                    showMessage('error-message', data.error);
                 } else {
+                    showMessage('success-message', '¡Inicio de sesión exitoso! Redirigiendo...', false);
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('username', data.user);
-                    window.location.href = '/chat.html';
+                    setTimeout(() => window.location.href = '/chat.html', 1000);
                 }
             }).catch(err => {
-                errorMessage.textContent = 'Error en la conexión';
-                errorMessage.classList.remove('hidden');
+                console.error('Error en fetch:', err);
+                showMessage('error-message', 'Error en la conexión: ' + err.message);
             });
         });
     </script>
