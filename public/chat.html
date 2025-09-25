@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - ChatKlax</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.pusher.com/pusher/pusher.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container-fluid flex h-screen">
+        <div class="sidebar bg-gray-800 w-64 p-4">
+            <h4 class="text-lg font-semibold mb-4">Mis Chats</h4>
+            <ul id="chat-list" class="space-y-2"></ul>
+            <button id="new-chat" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-4 w-full">Nuevo Chat</button>
+            <div id="user-profile" class="mt-4 flex items-center">
+                <img id="avatar" src="/assets/default-avatar.png" alt="Avatar" class="w-10 h-10 rounded-full mr-2">
+                <span id="username" class="text-sm"></span>
+                <input type="file" id="avatar-upload" accept="image/*" class="hidden">
+            </div>
+        </div>
+        <div class="chat-area flex-1 p-4 flex flex-col">
+            <div id="messages" class="flex-1 overflow-y-auto bg-gray-700 p-4 rounded"></div>
+            <div class="input-group mt-4 flex">
+                <input type="text" id="message-input" class="flex-1 p-2 bg-gray-600 rounded-l border border-gray-500 focus:outline-none focus:border-blue-500" placeholder="Escribe un mensaje...">
+                <button id="send-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 rounded-r">Enviar</button>
+            </div>
+            <button id="call-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-2">Llamada de Voz/Video</button>
+            <div class="flex mt-4 space-x-4">
+                <video id="local-video" autoplay muted class="w-48 hidden"></video>
+                <video id="remote-video" autoplay class="w-48 hidden"></video>
+            </div>
+        </div>
+    </div>
+    <script src="/script.js"></script>
+</body>
+</html>

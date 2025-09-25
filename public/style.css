@@ -1,0 +1,16 @@
+.nav-menu.active {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    background: #2f3136;
+    padding: 10px;
+    border-radius: 5px;
+}
+.nav-menu a {
+    margin: 5px 0;
+}
+.shape-circle {
+    filter: blur(50px);
+}

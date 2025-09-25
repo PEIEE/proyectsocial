@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - ChatKlax</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <div class="flex justify-center mb-4">
+            <img src="/assets/CHATKLAX.png" alt="ChatKlax Logo" class="h-12">
+        </div>
+        <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión o Registrarse</h2>
+        <div class="space-y-4">
+            <div>
+                <label for="username" class="block text-sm">Nombre de usuario</label>
+                <input type="text" id="username" class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+                <label for="password" class="block text-sm">Contraseña</label>
+                <input type="password" id="password" class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-blue-500">
+            </div>
+            <div class="flex space-x-4">
+                <button id="login-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">Iniciar Sesión</button>
+                <button id="register-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded">Registrarse</button>
+            </div>
+        </div>
+        <p id="error-message" class="text-red-500 text-center mt-4 hidden"></p>
+    </div>
+    <script>
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            }).then(res => res.json()).then(data => {
+                if (data.error) {
+                    errorMessage.textContent = data.error;
+                    errorMessage.classList.remove('hidden');
+                } else {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('username', data.user);
+                    window.location.href = '/chat.html';
+                }
+            }).catch(err => {
+                errorMessage.textContent = 'Error en la conexión';
+                errorMessage.classList.remove('hidden');
+            });
+        });
+
+        document.getElementById('register-btn').addEventListener('click', () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            }).then(res => res.json()).then(data => {
+                if (data.error) {
+                    errorMessage.textContent = data.error;
+                    errorMessage.classList.remove('hidden');
+                } else {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('username', data.user);
+                    window.location.href = '/chat.html';
+                }
+            }).catch(err => {
+                errorMessage.textContent = 'Error en la conexión';
+                errorMessage.classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
