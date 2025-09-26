@@ -25,6 +25,7 @@
             <button type="button" id="register-btn">Registrarse</button>
             <button type="button" id="login-btn" style="display: none;">Iniciar Sesión</button>
             <p id="error-message" style="color: red;"></p>
+            <p id="success-message" style="color: green; display: none;"></p>
             <p id="loading-message" style="color: blue; display: none;">Procesando...</p>
         </form>
         <p id="toggle-text">
@@ -39,6 +40,7 @@
         const loginBtn = document.getElementById('login-btn');
         const registerBtn = document.getElementById('register-btn');
         const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
         const loadingMessage = document.getElementById('loading-message');
         const toggleRegister = document.getElementById('toggle-register');
         const usernameInput = document.getElementById('username');
@@ -49,20 +51,43 @@
 
         let isRegisterMode = true;
 
-        // Alternar entre registro e inicio de sesión
-        toggleRegister.addEventListener('click', (e) => {
+        // Función para alternar entre modos
+        function switchToLoginMode() {
+            isRegisterMode = false;
+            usernameInput.style.display = 'none';
+            usernameLabel.style.display = 'none';
+            loginBtn.style.display = 'block';
+            registerBtn.style.display = 'none';
+            toggleText.innerHTML = '¿No tienes cuenta? <a href="#" id="toggle-register">Regístrate</a>';
+            toggleRegister.removeEventListener('click', switchToLoginMode); // Evitar múltiples listeners
+            toggleRegister.addEventListener('click', toggleMode);
+        }
+
+        function switchToRegisterMode() {
+            isRegisterMode = true;
+            usernameInput.style.display = 'block';
+            usernameLabel.style.display = 'block';
+            loginBtn.style.display = 'none';
+            registerBtn.style.display = 'block';
+            toggleText.innerHTML = '¿Ya tienes cuenta? <a href="#" id="toggle-register">Inicia sesión</a>';
+            toggleRegister.removeEventListener('click', switchToRegisterMode);
+            toggleRegister.addEventListener('click', toggleMode);
+        }
+
+        function toggleMode(e) {
             e.preventDefault();
-            isRegisterMode = !isRegisterMode;
-            usernameInput.style.display = isRegisterMode ? 'block' : 'none';
-            usernameLabel.style.display = isRegisterMode ? 'block' : 'none';
-            loginBtn.style.display = isRegisterMode ? 'none' : 'block';
-            registerBtn.style.display = isRegisterMode ? 'block' : 'none';
-            toggleText.innerHTML = isRegisterMode
-                ? '¿Ya tienes cuenta? <a href="#" id="toggle-register">Inicia sesión</a>'
-                : '¿No tienes cuenta? <a href="#" id="toggle-register">Regístrate</a>';
+            if (isRegisterMode) {
+                switchToLoginMode();
+            } else {
+                switchToRegisterMode();
+            }
             errorMessage.textContent = '';
+            successMessage.style.display = 'none';
             loadingMessage.style.display = 'none';
-        });
+        }
+
+        // Alternar entre registro e inicio de sesión
+        toggleRegister.addEventListener('click', toggleMode);
 
         // Iniciar sesión
         loginBtn.addEventListener('click', async () => {
@@ -75,6 +100,7 @@
             }
 
             errorMessage.textContent = '';
+            successMessage.style.display = 'none';
             loadingMessage.style.display = 'block';
 
             try {
@@ -118,11 +144,16 @@
             }
 
             errorMessage.textContent = '';
+            successMessage.style.display = 'none';
             loadingMessage.style.display = 'block';
 
             try {
                 await registerUser(email, password, username);
-                window.location.href = '/chat.html';
+                loadingMessage.style.display = 'none';
+                successMessage.textContent = 'Registro exitoso, por favor inicia sesión.';
+                successMessage.style.display = 'block';
+                switchToLoginMode();
+                passwordInput.value = ''; // Limpiar contraseña por seguridad
             } catch (error) {
                 loadingMessage.style.display = 'none';
                 switch (error.code) {
@@ -141,7 +172,7 @@
             }
         });
 
-        // Permitir login con Enter
+        // Permitir enviar formulario con Enter
         authForm.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
