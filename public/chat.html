@@ -3,37 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat - ChatKlax</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/style.css">
-    <script src="https://cdn.pusher.com/pusher/pusher.min.js"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <title>Mis Chats</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-gray-900 text-white">
-    <div class="container-fluid flex h-screen">
-        <div class="sidebar bg-gray-800 w-64 p-4">
-            <h4 class="text-lg font-semibold mb-4">Mis Chats</h4>
-            <ul id="chat-list" class="space-y-2"></ul>
-            <button id="new-chat" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-4 w-full">Nuevo Chat</button>
-            <div id="user-profile" class="mt-4 flex items-center">
-                <img id="avatar" src="/assets/default-avatar.png" alt="Avatar" class="w-10 h-10 rounded-full mr-2">
-                <span id="username" class="text-sm"></span>
-                <input type="file" id="avatar-upload" accept="image/*" class="hidden">
-            </div>
+<body>
+    <div class="container">
+        <h2>Mis Chats</h2>
+        <div class="mb-3">
+            <img id="avatar" src="/assets/default-avatar.png" alt="Avatar" class="w-12 h-12 rounded-full cursor-pointer">
+            <input type="text" id="avatar-url" placeholder="URL del avatar (ej: https://i.imgur.com/...)" style="display: none;">
+            <button id="avatar-save" style="display: none;">Guardar Avatar</button>
+            <span id="username" class="ml-2"></span>
+            <button id="logout-btn" class="btn btn-secondary ml-2">Cerrar Sesión</button>
         </div>
-        <div class="chat-area flex-1 p-4 flex flex-col">
-            <div id="messages" class="flex-1 overflow-y-auto bg-gray-700 p-4 rounded"></div>
-            <div class="input-group mt-4 flex">
-                <input type="text" id="message-input" class="flex-1 p-2 bg-gray-600 rounded-l border border-gray-500 focus:outline-none focus:border-blue-500" placeholder="Escribe un mensaje...">
-                <button id="send-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 rounded-r">Enviar</button>
-            </div>
-            <button id="call-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-2">Llamada de Voz/Video</button>
-            <div class="flex mt-4 space-x-4">
-                <video id="local-video" autoplay muted class="w-48 hidden"></video>
-                <video id="remote-video" autoplay class="w-48 hidden"></video>
-            </div>
+        <ul id="chat-list" class="list-group mb-3"></ul>
+        <button id="new-chat" class="btn btn-primary mb-3">Nuevo Chat</button>
+        <div id="messages" class="mb-3"></div>
+        <div class="input-group mb-3">
+            <input type="text" id="message-input" class="form-control" placeholder="Escribe un mensaje">
+            <button id="send-btn" class="btn btn-primary">Enviar</button>
+        </div>
+        <button id="call-btn" class="btn btn-success">Llamada de Voz/Video</button>
+        <div class="video-container mt-3">
+            <video id="local-video" autoplay muted class="hidden"></video>
+            <video id="remote-video" autoplay class="hidden"></video>
         </div>
     </div>
-    <script src="/script.js"></script>
+
+    <script type="module">
+        import { auth, db } from '../src/firebase.js';
+        import { createChat, sendMessage, listenToMessages, loadChats } from '../src/chat.js';
+        import { getLocalStream, startCall, answerCall } from '../src/calls.js';
+        import { updateAvatar, loadUser } from '../src/auth.js';
+        import { signOut } from 'firebase/auth';
+        import { ref, onValue } from 'firebase/database';
+
+        const usernameSpan = document.getElementById('username');
+        const logoutBtn = document.getElementById('logout-btn');
+        const newChatBtn = document.getElementById('new-chat');
+        const chatList = document.getElementById('chat-list');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const callBtn = document.getElementById('call-btn');
+        const localVideo = document.getElementById('local-video');
+        const remoteVideo = document.getElementById('remote-video');
+        const avatarImg = document.getElementById('avatar');
+        const avatarUrlInput = document.getElementById('avatar-url');
+        const avatarSaveBtn = document.getElementById('avatar-save');
+
+        let currentChatId = 'general';
+        let localStream;
+
+        // Verifica autenticación
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                usernameSpan.textContent = user.displayName || user.email;
+                await loadUser(user.uid, avatarImg);
+                localStream = await getLocalStream();
+                localVideo.srcObject = localStream;
+                listenForCalls(user.uid);
+                loadChats(user.uid, chatList, switchChat);
+            } else {
+                window.location.href = '/login.html';
+            }
+        });
+
+        // Actualizar avatar
+        avatarImg.addEventListener('click', () => {
+            avatarUrlInput.style.display = 'block';
+            avatarSaveBtn.style.display = 'block';
+        });
+        avatarSaveBtn.addEventListener('click', async () => {
+            const avatarUrl = avatarUrlInput.value.trim();
+            if (avatarUrl && auth.currentUser) {
+                try {
+                    const url = await updateAvatar(auth.currentUser.uid, avatarUrl);
+                    avatarImg.src = url;
+                    avatarUrlInput.style.display = 'none';
+                    avatarSaveBtn.style.display = 'none';
+                    avatarUrlInput.value = '';
+                } catch (error) {
+                    console.error('Error actualizando avatar:', error);
+                    alert(error.message);
+                }
+            }
+        });
+
+        // Crear nuevo chat
+        newChatBtn.addEventListener('click', async () => {
+            const chatName = prompt('Nombre del nuevo chat:');
+            const participantId = prompt('ID del otro usuario:');
+            if (chatName && participantId && auth.currentUser) {
+                try {
+                    const chatId = await createChat([auth.currentUser.uid, participantId], chatName);
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item list-group-item-action cursor-pointer p-2 bg-gray-700 rounded hover:bg-gray-600';
+                    li.textContent = chatName;
+                    li.onclick = () => switchChat(chatId, chatName);
+                    chatList.appendChild(li);
+                } catch (error) {
+                    alert(error.message);
+                }
+            }
+        });
+
+        // Cambiar de chat
+        function switchChat(chatId, chatName) {
+            currentChatId = chatId;
+            document.getElementById('messages').innerHTML = '';
+            listenToMessages(chatId, (messages) => {
+                const container = document.getElementById('messages');
+                container.innerHTML = messages.map(msg => `
+                    <div class="message flex mb-2">
+                        <div class="w-8 h-8 bg-gray-500 rounded-full mr-2 flex-shrink-0"></div>
+                        <div>
+                            <strong class="text-blue-400">${msg.username}:</strong> ${msg.text}
+                            <small class="text-gray-400 ml-2">${new Date(msg.timestamp).toLocaleTimeString()}</small>
+                        </div>
+                    </div>
+                `).join('');
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        // Enviar mensaje
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        function sendMessage() {
+            if (messageInput.value.trim() && currentChatId) {
+                sendMessage(currentChatId, auth.currentUser.uid, messageInput.value, auth.currentUser.displayName)
+                    .then(() => {
+                        messageInput.value = '';
+                    })
+                    .catch(err => console.error('Error enviando mensaje:', err));
+            }
+        }
+
+        // Iniciar llamada
+        callBtn.addEventListener('click', async () => {
+            const otherPeerId = prompt('ID del otro usuario (pide su Peer ID):');
+            if (otherPeerId && auth.currentUser) {
+                try {
+                    await startCall(auth.currentUser.uid, otherPeerId, localVideo, remoteVideo);
+                } catch (error) {
+                    alert('Error iniciando llamada: ' + error.message);
+                }
+            }
+        });
+
+        // Escuchar llamadas entrantes
+        function listenForCalls(userId) {
+            const callsRef = ref(db, 'calls');
+            onValue(callsRef, (snapshot) => {
+                snapshot.forEach((childSnapshot) => {
+                    const callData = childSnapshot.val();
+                    if (callData.status === 'ringing' && callData.participants.includes(userId)) {
+                        if (confirm('Llamada entrante. ¿Aceptar?')) {
+                            answerCall(childSnapshot.key, localVideo, remoteVideo, userId);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Cerrar sesión
+        logoutBtn.addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.href = '/login.html';
+        });
+    </script>
 </body>
 </html>
