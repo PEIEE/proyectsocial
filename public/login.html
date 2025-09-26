@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión / Registrarse</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <div class="container">
@@ -34,7 +34,7 @@
     </div>
 
     <script type="module">
-        import { loginUser, registerUser } from '../src/auth.js';
+        import { loginUser, registerUser } from '/auth.js';
 
         const authForm = document.getElementById('auth-form');
         const loginBtn = document.getElementById('login-btn');
@@ -60,7 +60,6 @@
             loginBtn.style.display = 'block';
             registerBtn.style.display = 'none';
             toggleText.innerHTML = '¿No tienes cuenta? <a href="#" id="toggle-register">Regístrate</a>';
-            // Actualizar el listener del enlace toggle
             toggleRegister.removeEventListener('click', switchToLoginMode);
             toggleRegister.addEventListener('click', toggleMode);
         }
