@@ -18,7 +18,7 @@ export async function registerUser(email, password, username) {
 
     return user;
   } catch (error) {
-    throw error; // Dejar que el error sea manejado por el llamador
+    throw error; // Propagar el error para que login.html lo maneje
   }
 }
 
@@ -27,7 +27,7 @@ export async function loginUser(email, password) {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   } catch (error) {
-    throw error; // Dejar que el error sea manejado por el llamador
+    throw error; // Propagar el error para que login.html lo maneje
   }
 }
 
