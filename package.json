@@ -2,7 +2,7 @@
   "name": "chatklax",
   "version": "1.0.0",
   "scripts": {
-    "build": "cp -r src/* public/ && cp node_modules/firebase/firebase*.js public/ && cp node_modules/peerjs/dist/peerjs.min.js public/",
+    "build": "mkdir -p public && cp -r src/*.js public/ && cp node_modules/firebase/firebase*.js public/ && cp node_modules/peerjs/dist/peerjs.min.js public/",
     "start": "npx serve public"
   },
   "dependencies": {
