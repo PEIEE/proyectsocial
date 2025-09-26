@@ -22,7 +22,7 @@ export async function registerUser(email, password, username) {
     return user;
   } catch (error) {
     console.error('Error en registerUser:', error.code, error.message);
-    throw error; // Propagar el error para que login.html lo maneje
+    throw error;
   }
 }
 
@@ -33,7 +33,7 @@ export async function loginUser(email, password) {
     return userCredential.user;
   } catch (error) {
     console.error('Error en loginUser:', error.code, error.message);
-    throw error; // Propagar el error para que login.html lo maneje
+    throw error;
   }
 }
 
