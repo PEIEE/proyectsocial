@@ -2,3 +2,9 @@
   from = "/*"
   to = "/index.html"
   status = 200
+  conditions = { "Role" = "html" }
+
+[[redirects]]
+  from = "/*.js"
+  to = "/:splat.js"
+  status = 200
