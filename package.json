@@ -1,10 +1,12 @@
 {
   "name": "chatklax",
   "version": "1.0.0",
+  "scripts": {
+    "build": "cp -r src/* public/ && cp node_modules/firebase/firebase*.js public/ && cp node_modules/peerjs/dist/peerjs.min.js public/",
+    "start": "npx serve public"
+  },
   "dependencies": {
-    "pg": "^8.11.3",
-    "jsonwebtoken": "^9.0.0",
-    "bcryptjs": "^2.4.3",
-    "node-fetch": "^2.6.7"
+    "firebase": "^10.14.1",
+    "peerjs": "^1.5.2"
   }
 }
