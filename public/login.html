@@ -51,19 +51,23 @@
 
         let isRegisterMode = true;
 
-        // Función para alternar entre modos
+        // Función para alternar al modo de inicio de sesión
         function switchToLoginMode() {
+            console.log('Cambiando a modo de inicio de sesión');
             isRegisterMode = false;
             usernameInput.style.display = 'none';
             usernameLabel.style.display = 'none';
             loginBtn.style.display = 'block';
             registerBtn.style.display = 'none';
             toggleText.innerHTML = '¿No tienes cuenta? <a href="#" id="toggle-register">Regístrate</a>';
-            toggleRegister.removeEventListener('click', switchToLoginMode); // Evitar múltiples listeners
+            // Actualizar el listener del enlace toggle
+            toggleRegister.removeEventListener('click', switchToLoginMode);
             toggleRegister.addEventListener('click', toggleMode);
         }
 
+        // Función para alternar al modo de registro
         function switchToRegisterMode() {
+            console.log('Cambiando a modo de registro');
             isRegisterMode = true;
             usernameInput.style.display = 'block';
             usernameLabel.style.display = 'block';
@@ -74,6 +78,7 @@
             toggleRegister.addEventListener('click', toggleMode);
         }
 
+        // Función para alternar entre modos
         function toggleMode(e) {
             e.preventDefault();
             if (isRegisterMode) {
@@ -86,7 +91,7 @@
             loadingMessage.style.display = 'none';
         }
 
-        // Alternar entre registro e inicio de sesión
+        // Configurar el listener inicial
         toggleRegister.addEventListener('click', toggleMode);
 
         // Iniciar sesión
@@ -96,6 +101,7 @@
 
             if (!email || !password) {
                 errorMessage.textContent = 'Por favor, completa todos los campos.';
+                console.error('Campos vacíos detectados');
                 return;
             }
 
@@ -104,10 +110,13 @@
             loadingMessage.style.display = 'block';
 
             try {
+                console.log('Intentando iniciar sesión con:', email);
                 await loginUser(email, password);
+                console.log('Inicio de sesión exitoso, redirigiendo a chat.html');
                 window.location.href = '/chat.html';
             } catch (error) {
                 loadingMessage.style.display = 'none';
+                console.error('Error en inicio de sesión:', error.code, error.message);
                 switch (error.code) {
                     case 'auth/user-not-found':
                         errorMessage.textContent = 'Correo no registrado.';
@@ -135,11 +144,13 @@
 
             if (!email || !password || !username) {
                 errorMessage.textContent = 'Por favor, completa todos los campos.';
+                console.error('Campos vacíos detectados durante registro');
                 return;
             }
 
             if (password.length < 6) {
                 errorMessage.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+                console.error('Contraseña demasiado corta');
                 return;
             }
 
@@ -148,14 +159,17 @@
             loadingMessage.style.display = 'block';
 
             try {
+                console.log('Intentando registrar con:', email, username);
                 await registerUser(email, password, username);
+                console.log('Registro exitoso, cambiando a modo de inicio de sesión');
                 loadingMessage.style.display = 'none';
                 successMessage.textContent = 'Registro exitoso, por favor inicia sesión.';
                 successMessage.style.display = 'block';
-                switchToLoginMode();
                 passwordInput.value = ''; // Limpiar contraseña por seguridad
+                switchToLoginMode();
             } catch (error) {
                 loadingMessage.style.display = 'none';
+                console.error('Error en registro:', error.code, error.message);
                 switch (error.code) {
                     case 'auth/email-already-in-use':
                         errorMessage.textContent = 'El correo ya está registrado.';
@@ -165,6 +179,9 @@
                         break;
                     case 'auth/weak-password':
                         errorMessage.textContent = 'La contraseña es demasiado débil.';
+                        break;
+                    case 'auth/permission-denied':
+                        errorMessage.textContent = 'Permiso denegado al escribir datos de usuario.';
                         break;
                     default:
                         errorMessage.textContent = `Error: ${error.message}`;
