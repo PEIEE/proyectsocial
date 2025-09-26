@@ -1,7 +1,6 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { ref, set, get } from 'firebase/database';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, db, storage } from './firebase';
+import { auth, db } from './firebase';
 
 export async function registerUser(email, password, username) {
   try {
@@ -19,7 +18,7 @@ export async function registerUser(email, password, username) {
 
     return user;
   } catch (error) {
-    throw new Error(error.message);
+    throw error; // Dejar que el error sea manejado por el llamador
   }
 }
 
@@ -28,19 +27,19 @@ export async function loginUser(email, password) {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   } catch (error) {
-    throw new Error(error.message);
+    throw error; // Dejar que el error sea manejado por el llamador
   }
 }
 
-export async function uploadAvatar(file, userId) {
+export async function updateAvatar(userId, avatarUrl) {
   try {
-    const avatarRef = storageRef(storage, `avatars/${userId}`);
-    await uploadBytes(avatarRef, file);
-    const url = await getDownloadURL(avatarRef);
-    await set(ref(db, `users/${userId}/avatar`), url);
-    return url;
+    if (!avatarUrl.startsWith('http')) {
+      throw new Error('La URL del avatar debe comenzar con http o https');
+    }
+    await set(ref(db, `users/${userId}/avatar`), avatarUrl);
+    return avatarUrl;
   } catch (error) {
-    throw new Error('Error subiendo avatar: ' + error.message);
+    throw new Error('Error actualizando avatar: ' + error.message);
   }
 }
 
